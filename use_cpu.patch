@@ -1,0 +1,81 @@
+diff --git a/examples/locomotion/go2_eval.py b/examples/locomotion/go2_eval.py
+index 32ee5ad..5ea904a 100644
+--- a/examples/locomotion/go2_eval.py
++++ b/examples/locomotion/go2_eval.py
+@@ -17,7 +17,7 @@ def main():
+     parser.add_argument("--ckpt", type=int, default=100)
+     args = parser.parse_args()
+ 
+-    gs.init()
++    gs.init(backend=gs.cpu)
+ 
+     log_dir = f"{args.log_dir}/{args.exp_name}/{args.param_name}"
+     env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = pickle.load(open(f"{log_dir}/cfgs.pkl", "rb"))
+@@ -30,12 +30,13 @@ def main():
+         reward_cfg=reward_cfg,
+         command_cfg=command_cfg,
+         show_viewer=True,
++        device="cpu"
+     )
+ 
+-    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda:0")
++    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cpu")
+     resume_path = os.path.join(log_dir, f"model_{args.ckpt}.pt")
+     runner.load(resume_path)
+-    policy = runner.get_inference_policy(device="cuda:0")
++    policy = runner.get_inference_policy(device="cpu")
+ 
+     obs, _ = env.reset()
+     with torch.no_grad():
+diff --git a/examples/locomotion/go2_train.py b/examples/locomotion/go2_train.py
+index 8715872..de38ac6 100644
+--- a/examples/locomotion/go2_train.py
++++ b/examples/locomotion/go2_train.py
+@@ -145,7 +145,7 @@ def main():
+     parser.add_argument("--max_iterations", type=int, default=100)
+     args = parser.parse_args()
+ 
+-    gs.init(logging_level="warning")
++    gs.init(logging_level="warning", backend=gs.cpu)
+ 
+     log_dir = f"{args.log_dir}/{args.exp_name}/{args.param_name}"
+     env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
+@@ -158,10 +158,10 @@ def main():
+     os.makedirs(log_dir, exist_ok=True)
+ 
+     env = Go2Env(
+-        num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
++        num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg, device="cpu"
+     )
+ 
+-    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cuda:0")
++    runner = OnPolicyRunner(env, train_cfg, log_dir, device="cpu")
+ 
+     pickle.dump(
+         [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+diff --git a/examples/tutorials/control_your_robot.py b/examples/tutorials/control_your_robot.py
+index 72a9fad..1c2e172 100644
+--- a/examples/tutorials/control_your_robot.py
++++ b/examples/tutorials/control_your_robot.py
+@@ -3,7 +3,7 @@ import numpy as np
+ import genesis as gs
+ 
+ ########################## init ##########################
+-gs.init(backend=gs.gpu)
++gs.init(backend=gs.cpu)
+ 
+ ########################## create a scene ##########################
+ scene = gs.Scene(
+diff --git a/examples/tutorials/parallel_simulation.py b/examples/tutorials/parallel_simulation.py
+index d90f85a..c5ccca1 100644
+--- a/examples/tutorials/parallel_simulation.py
++++ b/examples/tutorials/parallel_simulation.py
+@@ -3,7 +3,7 @@ import torch
+ import genesis as gs
+ 
+ ########################## init ##########################
+-gs.init(backend=gs.gpu)
++gs.init(backend=gs.cpu)
+ 
+ ########################## create a scene ##########################
+ scene = gs.Scene(

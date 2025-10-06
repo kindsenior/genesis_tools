@@ -1,0 +1,13 @@
+diff --git a/rsl_rl/runners/on_policy_runner.py b/rsl_rl/runners/on_policy_runner.py
+index e11ae4d..c717af8 100644
+--- a/rsl_rl/runners/on_policy_runner.py
++++ b/rsl_rl/runners/on_policy_runner.py
+@@ -219,7 +219,7 @@ class OnPolicyRunner:
+             }, path)
+ 
+     def load(self, path, load_optimizer=True):
+-        loaded_dict = torch.load(path)
++        loaded_dict = torch.load(path, map_location=torch.device('cpu'))
+         self.alg.actor_critic.load_state_dict(loaded_dict['model_state_dict'])
+         if load_optimizer:
+             self.alg.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
