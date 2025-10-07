@@ -49,24 +49,26 @@ class Go2Env:
         )
 
         # add ground
-        # ## flat plane
-        # self.ground = self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
-
-        ## terrain
         terrain_cfg = env_cfg["terrain"]
-        subterrain_grids = torch.tensor(terrain_cfg["n_subterrains"], device=self.device) # subterrainの数
-        self.subterrain_size = torch.tensor(terrain_cfg["subterrain_size"], device=self.device)  # subterrainのサイズ
-        center_offset = - subterrain_grids * self.subterrain_size / 2
-        terrain = gs.morphs.Terrain(
-            pos=tuple(center_offset.cpu().tolist() + [0.0]),
-            n_subterrains=subterrain_grids.cpu().tolist(),
-            subterrain_size=self.subterrain_size.cpu().tolist(),
-            horizontal_scale=terrain_cfg["horizontal_scale"],
-            vertical_scale=terrain_cfg["vertical_scale"],
-            subterrain_types=terrain_cfg["subterrain_types"],
-            randomize=terrain_cfg["randomize"],
-        )
-        self.ground = self.scene.add_entity(terrain)
+        self.use_terrain = terrain_cfg.get("use_terrain", False)
+        if self.use_terrain:
+            ## terrain
+            subterrain_grids = torch.tensor(terrain_cfg["n_subterrains"], device=self.device) # subterrainの数
+            self.subterrain_size = torch.tensor(terrain_cfg["subterrain_size"], device=self.device)  # subterrainのサイズ
+            center_offset = - subterrain_grids * self.subterrain_size / 2
+            terrain = gs.morphs.Terrain(
+                pos=tuple(center_offset.cpu().tolist() + [0.0]),
+                n_subterrains=subterrain_grids.cpu().tolist(),
+                subterrain_size=self.subterrain_size.cpu().tolist(),
+                horizontal_scale=terrain_cfg["horizontal_scale"],
+                vertical_scale=terrain_cfg["vertical_scale"],
+                subterrain_types=terrain_cfg["subterrain_types"],
+                randomize=terrain_cfg["randomize"],
+            )
+            self.ground = self.scene.add_entity(terrain)
+        else:
+            ## flat plane
+            self.ground = self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
 
         # height field for setting initial z positions matched to the ground heiht in reset_init_pos
         if hasattr(self.ground, "terrain_hf"): # when using terrain
@@ -280,9 +282,11 @@ class Go2Env:
         )
 
         # reset base
-        # self.base_pos[envs_idx] = self.base_init_pos
-        # self.base_quat[envs_idx] = self.base_init_quat.reshape(1, -1)
-        self.reset_init_base(envs_idx)
+        if self.use_terrain:
+            self.reset_init_base(envs_idx)
+        else:
+            self.base_pos[envs_idx] = self.base_init_pos
+            self.base_quat[envs_idx] = self.base_init_quat.reshape(1, -1)
         self.robot.set_pos(self.base_pos[envs_idx], zero_velocity=False, envs_idx=envs_idx)
         self.robot.set_quat(self.base_quat[envs_idx], zero_velocity=False, envs_idx=envs_idx)
         self.base_lin_vel[envs_idx] = 0

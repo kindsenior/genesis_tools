@@ -118,6 +118,7 @@ def get_cfgs():
         "clip_actions": 100.0,
         # terrain
         "terrain": {
+            "use_terrain": False,
             "n_subterrains": [5, 5],
             "subterrain_size": [12.0, 12.0],
             "horizontal_scale": 0.25,
