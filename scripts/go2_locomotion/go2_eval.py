@@ -27,7 +27,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--log_dir", type=str, default="logs/go2_locomotion/test")
     parser.add_argument("-B", "--num_envs", type=int, default=1)
-    parser.add_argument("--ckpt", type=int, default=100)
+    parser.add_argument("--ckpt", type=int, required=True, help="checkpoint to load")
     args = parser.parse_args()
 
     gs.init()
