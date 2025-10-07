@@ -188,7 +188,7 @@ def main():
     parser.add_argument("-l", "--log_dir", type=str, default="logs/go2_locomotion/test")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--ckpt", type=int, default=None)
-    parser.add_argument("--max_iterations", type=int, default=101)
+    parser.add_argument("--max_iterations", type=int, default=100)
     parser.add_argument("-r", "--resume", type=bool, default=False)
     parser.add_argument("-rp", "--resume_path", type=str, default=None)
     args = parser.parse_args()
