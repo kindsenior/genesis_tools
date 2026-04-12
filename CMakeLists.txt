@@ -4,7 +4,7 @@ project(genesis_tools)
 find_package(catkin REQUIRED)
 
 # Python modules
-# catkin_python_setup()
+catkin_python_setup()
 
 catkin_package()
 
