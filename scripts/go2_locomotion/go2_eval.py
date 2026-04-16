@@ -25,7 +25,7 @@ from go2_env import Go2Env
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2_locomotion/test")
+    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2-walking/test")
     parser.add_argument("-B", "--num_envs", type=int, default=1)
     parser.add_argument("--ckpt", type=int, required=True, help="checkpoint to load")
     args = parser.parse_args()

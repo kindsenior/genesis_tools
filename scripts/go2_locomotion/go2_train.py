@@ -186,7 +186,7 @@ def get_cfgs():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2_locomotion/test")
+    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2-walking/test")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--ckpt", type=int, default=None)
     parser.add_argument("--max_iterations", type=int, default=101)
@@ -202,6 +202,8 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
+    # save cfgs
+    ## added to the original code for saving cfgs by yaml
     with open(f"{log_dir}/cfgs.yaml", "w") as f:
         yaml.dump(
             {
@@ -225,6 +227,7 @@ def main():
     runner = OnPolicyRunner(env, train_cfg, log_dir, device=gs.device)
 
     # load a pretrained model and optimizer for resume
+    ## added to the original code for resume functionality
     if args.resume:
         # use parent path of log_dir as resume_path
         resume_path = Path(log_dir).parent / f"model_{args.ckpt}.pt" if args.resume_path is None else args.resume_path
