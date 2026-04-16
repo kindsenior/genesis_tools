@@ -189,16 +189,13 @@ def main():
     parser.add_argument("-l", "--log_dir", type=str, default="logs/go2_locomotion/test")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--ckpt", type=int, default=None)
-    parser.add_argument("--max_iterations", type=int, default=100)
+    parser.add_argument("--max_iterations", type=int, default=101)
     parser.add_argument("-r", "--resume", type=bool, default=False)
     parser.add_argument("-rp", "--resume_path", type=str, default=None)
     args = parser.parse_args()
 
-    gs.init(logging_level="warning")
-
     log_dir = f"{args.log_dir}"
     env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
-    args.max_iterations = args.max_iterations + 1
     train_cfg = get_train_cfg(args.max_iterations)
 
     if os.path.exists(log_dir):
@@ -218,6 +215,8 @@ def main():
             default_flow_style=False,
             sort_keys=False,
         )
+
+    gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 
     env = Go2Env(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg

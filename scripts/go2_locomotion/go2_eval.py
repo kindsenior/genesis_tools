@@ -35,7 +35,7 @@ def main():
     log_dir = f"{args.log_dir}"
     with open(Path(log_dir)/"cfgs.yaml", "r") as f:
         env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = yaml.safe_load(f).values()
-    # reward_cfg["reward_scales"] = {}
+    reward_cfg["reward_scales"] = {}
 
     global env
     env = Go2Env(
