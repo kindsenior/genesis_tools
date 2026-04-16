@@ -76,7 +76,7 @@ class Go2Env:
             ## flat plane
             self.ground = self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
 
-        # height field for setting initial z positions matched to the ground heiht in reset_init_pos
+        # height field for calculating base height reward based on the ground height
         if hasattr(self.ground, "terrain_hf"): # when using terrain
             self.height_field = (
                 torch.from_numpy(self.ground.terrain_hf).float().to(self.device)
@@ -250,48 +250,26 @@ class Go2Env:
     def get_privileged_observations(self):
         return None
 
-    def reset_init_base(self, envs_idx):
-        N = envs_idx.shape[0]
-        margin = self.subterrain_size + 1.0
-
-        # generate random (x, y)
-        min_xy = self.terrain_range[:, 0] + margin
-        max_xy = self.terrain_range[:, 1] - margin
-        xy = gs_rand_float(min_xy, max_xy, (N, 2), self.device) # shape: (N, 2)
-
-        # convert (x,y) to (i, j): indices in height_field
-        ij = ((xy - self.terrain_range[:, 0]) / self.terrain_resolution).long()
-        ij[:, 0].clamp_(0, self.height_field.shape[0] - 1)  # j
-        ij[:, 1].clamp_(0, self.height_field.shape[1] - 1)  # i
-
-        # get z from height_field
-        zs = self.height_field[ij[:, 0], ij[:, 1]].to(self.device) + self.base_init_pos[2]  # (N,)
-
-        # set x,y and z to base_pos
-        self.base_pos[envs_idx, 0:2] = xy
-        self.base_pos[envs_idx, 2] = zs
-
-        # generate random yaw angle
-        yaw_angles = torch.rand(N, device=self.device) * 2 * math.pi # [0, 2pi)
-
-        # convert yaw to quaternion (x=0, y=0)
-        half_yaw = yaw_angles * 0.5
-        base_quat = torch.zeros((N, 4), device=self.device)
-        base_quat[:, 0] = torch.cos(half_yaw)  # w
-        base_quat[:, 3] = torch.sin(half_yaw)  # z
-
-        self.base_quat[envs_idx] = base_quat
-
     def _reset_idx(self, envs_idx=None):
         # reset state
-        self.robot.set_qpos(self.init_qpos, envs_idx=envs_idx, zero_velocity=True, skip_forward=True)
+        ## use reset_qpos for resetting yaw direction
+        # self.robot.set_qpos(self.init_qpos, envs_idx=envs_idx, zero_velocity=True, skip_forward=True)
+        reset_qpos = self.init_qpos.clone()
+        if self.use_terrain: # set yaw direction randomly for terrain env
+            euler = torch.tensor([[0.0, 0.0, yaw_value]], device=self.device, dtype=gs.tc_float)
+            reset_qpos[3:7] = gu.euler_to_quat(euler)[0]
+        self.robot.set_qpos(reset_qpos, envs_idx=envs_idx, zero_velocity=True, skip_forward=True)
 
         # reset buffers
         if envs_idx is None:
-            self.base_pos.copy_(self.init_base_pos)
-            self.base_quat.copy_(self.init_base_quat)
+            ## use reset_qpos for resetting yaw direction
+            # self.base_pos.copy_(self.init_base_pos)
+            # self.base_quat.copy_(self.init_base_quat)
+            self.base_pos.copy_(reset_qpos[:3])
+            self.base_quat.copy_(reset_qpos[3:7])
             self.projected_gravity.copy_(self.init_projected_gravity)
-            self.dof_pos.copy_(self.init_dof_pos)
+            # self.dof_pos.copy_(self.init_dof_pos)
+            self.dof_pos.copy_(reset_qpos[7:])
             self.base_lin_vel.zero_()
             self.base_ang_vel.zero_()
             self.dof_vel.zero_()
@@ -301,12 +279,16 @@ class Go2Env:
             self.episode_length_buf.zero_()
             self.reset_buf.fill_(True)
         else:
-            torch.where(envs_idx[:, None], self.init_base_pos, self.base_pos, out=self.base_pos)
-            torch.where(envs_idx[:, None], self.init_base_quat, self.base_quat, out=self.base_quat)
+            ## use reset_qpos for resetting yaw direction
+            # torch.where(envs_idx[:, None], self.init_base_pos, self.base_pos, out=self.base_pos)
+            # torch.where(envs_idx[:, None], self.init_base_quat, self.base_quat, out=self.base_quat)
+            torch.where(envs_idx[:, None], reset_qpos[:3], self.base_pos, out=self.base_pos)
+            torch.where(envs_idx[:, None], reset_qpos[3:7], self.base_quat, out=self.base_quat)
             torch.where(
                 envs_idx[:, None], self.init_projected_gravity, self.projected_gravity, out=self.projected_gravity
             )
-            torch.where(envs_idx[:, None], self.init_dof_pos, self.dof_pos, out=self.dof_pos)
+            # torch.where(envs_idx[:, None], self.init_dof_pos, self.dof_pos, out=self.dof_pos)
+            torch.where(envs_idx[:, None], reset_qpos[7:], self.dof_pos, out=self.dof_pos)
             self.base_lin_vel.masked_fill_(envs_idx[:, None], 0.0)
             self.base_ang_vel.masked_fill_(envs_idx[:, None], 0.0)
             self.dof_vel.masked_fill_(envs_idx[:, None], 0.0)
