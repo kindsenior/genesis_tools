@@ -9,7 +9,7 @@ def gs_rand_float(lower, upper, shape, device):
     return (upper - lower) * torch.rand(size=shape, device=device) + lower
 
 
-class SampleBipedalRobotEnv:
+class Sbr1Env:
     def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg, show_viewer=False,  rendered_envs_idx=list(range(1))):
         self.num_envs = num_envs
         self.num_obs = obs_cfg["num_obs"]
@@ -57,11 +57,11 @@ class SampleBipedalRobotEnv:
         self.base_init_pos = torch.tensor(self.env_cfg["base_init_pos"], device=self.device)
         self.base_init_quat = torch.tensor(self.env_cfg["base_init_quat"], device=self.device)
         self.inv_base_init_quat = inv_quat(self.base_init_quat)
-        this_file = Path(__file__).resolve() # genesis_tools/scripts/sample_bipedal_robot_locomotion/sample_bipedal_robot_env.py
+        this_file = Path(__file__).resolve() # genesis_tools/scripts/sbr1_locomotion/sbr1_env.py
         pkg_root = this_file.parents[2] # genesis_tools/
         self.robot = self.scene.add_entity(
             gs.morphs.URDF(
-                file=pkg_root / "models" / "sample_bipedal_robot" / "sample_bipedal_robot.urdf",
+                file=pkg_root / "models" / "sample_bipedal_robot" / "sbr1.urdf",
                 pos=self.base_init_pos.cpu().numpy(),
                 quat=self.base_init_quat.cpu().numpy(),
             ),

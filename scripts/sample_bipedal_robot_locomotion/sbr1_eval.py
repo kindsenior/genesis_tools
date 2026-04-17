@@ -21,12 +21,12 @@ from rsl_rl.runners import OnPolicyRunner
 import genesis as gs
 from genesis.utils.geom import transform_quat_by_quat, quat_to_R
 
-from sample_bipedal_robot_env import SampleBipedalRobotEnv
+from sbr1_env import Sbr1Env
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--log_dir", type=str, default="logs/sample_bipedal_robot_locomotion/test")
+    parser.add_argument("-l", "--log_dir", type=str, default="logs/sbr1_locomotion/test")
     parser.add_argument("-B", "--num_envs", type=int, default=1)
     parser.add_argument("--ckpt", type=int, default=100)
     args = parser.parse_args()
@@ -39,7 +39,7 @@ def main():
     # reward_cfg["reward_scales"] = {}
 
     global env
-    env = SampleBipedalRobotEnv(
+    env = Sbr1Env(
         num_envs=1,
         env_cfg=env_cfg,
         obs_cfg=obs_cfg,
@@ -90,5 +90,5 @@ if __name__ == "__main__":
 
 """
 # evaluation
-python sample_bipedal_robot_eval.py -l logs/sample_bipedal_robot_locomotion/test --ckpt 100
+python sbr1_eval.py -l logs/sbr1_locomotion/test --ckpt 100
 """

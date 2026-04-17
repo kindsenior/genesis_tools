@@ -20,7 +20,7 @@ from rsl_rl.runners import OnPolicyRunner
 
 import genesis as gs
 
-from sample_bipedal_robot_env import SampleBipedalRobotEnv
+from sbr1_env import Sbr1Env
 import numpy as np
 
 def get_train_cfg(max_iterations):
@@ -165,7 +165,7 @@ def get_cfgs():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--log_dir", type=str, default="logs/sample_bipedal_robot_locomotion/test")
+    parser.add_argument("-l", "--log_dir", type=str, default="logs/sbr1_locomotion/test")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--max_iterations", type=int, default=5000)
     args = parser.parse_args()
@@ -194,7 +194,7 @@ def main():
             sort_keys=False,
         )
 
-    env = SampleBipedalRobotEnv(
+    env = Sbr1Env(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
 
@@ -209,5 +209,5 @@ if __name__ == "__main__":
 
 """
 # training
-python sample_bipedal_robot_train.py
+python sbr1_train.py
 """
