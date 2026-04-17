@@ -71,7 +71,7 @@ class Sbr1Env:
         self.scene.build(n_envs=num_envs)
 
         # names to indices
-        self.motor_dofs = [self.robot.get_joint(name).dof_idx_local for name in self.env_cfg["dof_names"]]
+        self.motor_dofs = [self.robot.get_joint(name).dof_idx_local for name in self.env_cfg["joint_names"]]
 
         # PD control parameters
         self.robot.set_dofs_kp([kp * rate for kp, rate in zip([self.env_cfg["kp"]] * self.num_actions, self.env_cfg["pdgain_rate"])], self.motor_dofs)
@@ -117,7 +117,7 @@ class Sbr1Env:
         self.base_pos = torch.zeros((self.num_envs, 3), device=self.device, dtype=gs.tc_float)
         self.base_quat = torch.zeros((self.num_envs, 4), device=self.device, dtype=gs.tc_float)
         self.default_dof_pos = torch.tensor(
-            [self.env_cfg["default_joint_angles"][name] for name in self.env_cfg["dof_names"]],
+            [self.env_cfg["default_joint_angles"][name] for name in self.env_cfg["joint_names"]],
             device=self.device,
             dtype=gs.tc_float,
         )

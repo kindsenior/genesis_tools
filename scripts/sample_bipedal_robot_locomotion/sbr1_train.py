@@ -87,7 +87,7 @@ def get_cfgs():
             "ankle_pitch_right_joint": 0.2,
             "ankle_roll_right_joint": 0.0,
         },
-        "dof_names": [
+        "joint_names": [
             "hip_pitch_left_joint",
             "hip_roll_left_joint",
             "hip_yaw_left_joint",
