@@ -133,19 +133,6 @@ class Sbr1Env:
         self.commands[envs_idx, 1] = gs_rand_float(*self.command_cfg["lin_vel_y_range"], (len(envs_idx),), self.device)
         self.commands[envs_idx, 2] = gs_rand_float(*self.command_cfg["ang_vel_range"], (len(envs_idx),), self.device)
 
-    def _check_nan(self, name, tensor):
-        if torch.isnan(tensor).any():
-            print(f"[NaN DETECTED] {name}: min={tensor.min().item()}, max={tensor.max().item()}")
-            print(tensor)
-
-            nan_mask = torch.isnan(tensor).any(dim=1)
-            nan_indices = nan_mask.nonzero(as_tuple=False).squeeze()
-            print(f"[NaN DETECTED] in {name}")
-            print(f"Indices with NaN: {nan_indices.tolist()}")
-            print(f"Rows with NaN:")
-            print(tensor[nan_mask])
-            raise ValueError(f"NaN detected in {name}: {tensor}")
-
     def step(self, actions):
         self.actions = torch.clip(actions, -self.env_cfg["clip_actions"], self.env_cfg["clip_actions"])
         exec_actions = self.last_actions if self.simulate_action_latency else self.actions
@@ -224,10 +211,6 @@ class Sbr1Env:
         # return self.obs_buf, None, self.rew_buf, self.reset_buf, self.extras # old
         return self.obs_buf, self.rew_buf, self.reset_buf, self.extras # new
 
-    # # old
-    # def get_observations(self):
-    #     return self.obs_buf
-    # new
     def get_observations(self):
         self.extras["observations"]["critic"] = self.obs_buf
         return self.obs_buf, self.extras
