@@ -46,7 +46,7 @@ def get_train_cfg(max_iterations):
             "actor_hidden_dims": [512, 256, 128],
             "critic_hidden_dims": [512, 256, 128],
             # "noise_std_type": "log",
-            "init_noise_std": 0.2,
+            "init_noise_std": 1.0, # 1.0 for reduce vibrations
             "class_name": "ActorCritic",
         },
         "runner": {
