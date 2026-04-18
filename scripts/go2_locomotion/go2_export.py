@@ -8,7 +8,7 @@ from genesis_tools.exporter import dump_policy
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--log_dir", type=str, required=True)
-    parser.add_argument("--ckpt", type=int, default=100)
+    parser.add_argument("--ckpt", type=int, required=True)
     args = parser.parse_args()
 
     dump_policy(
