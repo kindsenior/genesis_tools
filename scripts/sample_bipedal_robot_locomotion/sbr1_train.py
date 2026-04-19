@@ -159,7 +159,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--log_dir", type=str, default="logs/sbr1_locomotion/test")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
-    parser.add_argument("--max_iterations", type=int, default=5000)
+    parser.add_argument("--max_iterations", type=int, default=1001)
     args = parser.parse_args()
 
     gs.init(logging_level="warning")
