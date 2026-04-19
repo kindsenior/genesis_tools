@@ -272,15 +272,6 @@ class Sbr1Env:
         # Tracking of linear velocity commands (xy axes)
         lin_vel_error = torch.sum(torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
         return torch.exp(-lin_vel_error / self.reward_cfg["tracking_sigma"])
-    
-    def _reward_tracking_lin_vel_x(self):
-        slow = self.base_lin_vel[:, 0] < 2.5
-        return 2.5 + (self.base_lin_vel[:, 0] - 2.5) * slow
-
-    def _reward_tracking_ang_vel(self):
-        # Tracking of angular velocity commands (yaw)
-        ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
-        return torch.exp(-ang_vel_error / self.reward_cfg["tracking_sigma"])
 
     def _reward_lin_vel_z(self):
         # Penalize z axis base linear velocity
@@ -294,54 +285,16 @@ class Sbr1Env:
         # Penalize joint poses far away from default pose
         return torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1)
 
-    def _reward_base_height(self):
-        # Penalize base height away from target
-        return torch.square(self.base_pos[:, 2] - self.reward_cfg["base_height_target"])
-
     def _reward_base_y(self):
         # Penalize base height away from target
         return torch.square(self.base_pos[:, 1])
-    
+
     def _reward_base_orientation(self):
         R = quat_to_R(
             transform_quat_by_quat(torch.ones_like(self.base_quat) * self.inv_base_init_quat, self.base_quat)
         )
         return (R[:, 2, 2])
-    
-    def _reward_alive(self):
-        return 1.0
-    
-    def _reward_feet_slip(self):
-        contact = torch.norm(self.feet_contact_force, dim=2) > 1
-        contact_feet_vel = torch.square(self.feet_lin_vel) * contact.unsqueeze(-1)  # [num_envs, 2, 3]
-        contact_feet_ang = torch.square(self.feet_ang_vel) * contact.unsqueeze(-1)  # [num_envs, 2, 3]
-        penalize = torch.square(contact_feet_vel) + torch.square(contact_feet_ang)  # [num_envs, 2, 3]
-        return torch.sum(penalize, dim=(1, 2))
 
-    def _reward_feet_air_time(self):
-        # Reward long steps
-        # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
-        contact = torch.norm(self.feet_contact_force, dim=2) > 1
-        contact_filt = torch.logical_or(contact, self.feet_last_contacts) 
-        self.feet_last_contacts = contact
-        first_contact = (self.feet_air_time > 0.) * contact_filt
-        self.feet_air_time += self.dt
-        rew_airTime = torch.sum((self.feet_air_time - 0.4) * first_contact, dim=1) # reward only on first contact with the ground
-        rew_airTime *= torch.norm(self.commands[:, :2], dim=1) > 0.1 #no reward for zero command
-        self.feet_air_time *= ~contact_filt
-        return rew_airTime
-    
-    def _reward_feet_swing_height(self):
-        contact = torch.norm(self.feet_contact_force, dim=2) > 1
-        pos_error = torch.square(self.feet_pos[:, :, 2] - 0.3) * ~contact
-        return torch.sum(pos_error, dim=(1))
-    
-    def _reward_feet_orientation(self):
-        R = quat_to_R(
-            transform_quat_by_quat(torch.ones_like(self.feet_quat) * self.inv_base_init_quat, self.feet_quat)
-        )
-        return torch.sum(R[:, :, 2, 2], dim=1)
-    
     def _reward_feet_y(self):
         # return torch.sum(torch.square(self.feet_pos[:, :, 1] - self.feet_init_pos_y), dim=1)
         return torch.sum(torch.abs(self.feet_pos[:, :, 1] - self.feet_init_pos_y) > 0.05, dim=1)
