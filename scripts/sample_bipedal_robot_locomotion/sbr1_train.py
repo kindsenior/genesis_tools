@@ -147,7 +147,7 @@ def get_cfgs():
     command_cfg = {
         "num_commands": 3,
         # "lin_vel_x_range": [0.3, 0.3],
-        "lin_vel_x_range": [2.5, 3.0],
+        "lin_vel_x_range": [0, 1.0],
         "lin_vel_y_range": [0, 0],
         "ang_vel_range": [-0, 0],
     }
