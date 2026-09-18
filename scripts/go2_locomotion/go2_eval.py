@@ -65,5 +65,5 @@ if __name__ == "__main__":
 
 """
 # evaluation
-python examples/locomotion/go2_eval.py -e go2-walking -v --ckpt 100
+python scripts/go2_locomotion/go2_eval.py -l logs/go2_locomotion/test --ckpt 100
 """

@@ -146,6 +146,6 @@ if __name__ == "__main__":
 
 """
 # evaluation
-python examples/locomotion/go2_backflip.py -e single
-python examples/locomotion/go2_backflip.py -e double
+python scripts/go2_locomotion/go2_backflip.py -e single
+python scripts/go2_locomotion/go2_backflip.py -e double
 """

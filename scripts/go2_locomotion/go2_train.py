@@ -240,5 +240,5 @@ if __name__ == "__main__":
 
 """
 # training
-python examples/locomotion/go2_train.py
+python scripts/go2_locomotion/go2_train.py -l logs/go2_locomotion/test
 """
