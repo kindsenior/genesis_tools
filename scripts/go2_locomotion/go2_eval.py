@@ -25,7 +25,7 @@ from go2_env import Go2Env
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2_locomotion/test")
+    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2-walking/test")
     parser.add_argument("-B", "--num_envs", type=int, default=1)
     parser.add_argument("--ckpt", type=int, required=True, help="checkpoint to load")
     args = parser.parse_args()
@@ -35,7 +35,7 @@ def main():
     log_dir = f"{args.log_dir}"
     with open(Path(log_dir)/"cfgs.yaml", "r") as f:
         env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = yaml.safe_load(f).values()
-    # reward_cfg["reward_scales"] = {}
+    reward_cfg["reward_scales"] = {}
 
     global env
     env = Go2Env(

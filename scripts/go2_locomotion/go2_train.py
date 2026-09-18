@@ -60,7 +60,7 @@ def get_train_cfg(max_iterations):
         },
         "runner_class_name": "OnPolicyRunner",
         "num_steps_per_env": 24,
-        "save_interval": 25,
+        "save_interval": 100,
         "empirical_normalization": None,
         "seed": 1,
     }
@@ -173,12 +173,12 @@ def get_cfgs():
     }
     command_cfg = {
         "num_commands": 3,
-        # "lin_vel_x_range": [0.5, 0.5],
-        # "lin_vel_y_range": [0, 0],
-        # "ang_vel_range": [0, 0],
-        "lin_vel_x_range": [0, 0.5],
-        "lin_vel_y_range": [-0.3, 0.3],
-        "ang_vel_range": [-0.5, 0.5],
+        "lin_vel_x_range": [0.5, 0.5],
+        "lin_vel_y_range": [0, 0],
+        "ang_vel_range": [0, 0],
+        # "lin_vel_x_range": [0, 0.5],
+        # "lin_vel_y_range": [-0.3, 0.3],
+        # "ang_vel_range": [-0.5, 0.5],
     }
 
     return env_cfg, obs_cfg, reward_cfg, command_cfg
@@ -186,25 +186,24 @@ def get_cfgs():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2_locomotion/test")
+    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2-walking/test")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--ckpt", type=int, default=None)
-    parser.add_argument("--max_iterations", type=int, default=100)
+    parser.add_argument("--max_iterations", type=int, default=101)
     parser.add_argument("-r", "--resume", type=bool, default=False)
     parser.add_argument("-rp", "--resume_path", type=str, default=None)
     args = parser.parse_args()
 
-    gs.init(logging_level="warning")
-
     log_dir = f"{args.log_dir}"
     env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
-    args.max_iterations = args.max_iterations + 1
     train_cfg = get_train_cfg(args.max_iterations)
 
     if os.path.exists(log_dir):
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
+    # save cfgs
+    ## added to the original code for saving cfgs by yaml
     with open(f"{log_dir}/cfgs.yaml", "w") as f:
         yaml.dump(
             {
@@ -219,6 +218,8 @@ def main():
             sort_keys=False,
         )
 
+    gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
+
     env = Go2Env(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
@@ -226,6 +227,7 @@ def main():
     runner = OnPolicyRunner(env, train_cfg, log_dir, device=gs.device)
 
     # load a pretrained model and optimizer for resume
+    ## added to the original code for resume functionality
     if args.resume:
         # use parent path of log_dir as resume_path
         resume_path = Path(log_dir).parent / f"model_{args.ckpt}.pt" if args.resume_path is None else args.resume_path
