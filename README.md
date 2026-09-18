@@ -1,5 +1,9 @@
 # Supports
 - Ubuntu20.04
+- Python 3.10
+- Genesis v1.3.3
+- rsl-rl-lib v2.2.4
+
 # Installation
 1. install python3.10
    ```
@@ -17,7 +21,8 @@
    ```
 1. get genesis sources
    ```
-   git clone https://github.com/Genesis-Embodied-AI/Genesis.git -b v0.3.0
+   git clone --branch v1.3.3 --depth 1 \
+     https://github.com/Genesis-Embodied-AI/Genesis.git
    ```
 1. install required pip packages
    ```
@@ -31,15 +36,15 @@
 1. clone and build genesis_tools
    ```
    # change 'catkin_workspace' to your catkin workspace directory
-   cd catkin_workspace/src
+   cd ~/catkin_workspace/src
    git clone git@github.com:kindsenior/genesis_tools.git
-   source catkin_workspace/devel/setup.bash
+   cd ..
    deactivate # Deactivate virtual envs during catkin build
    catkin build genesis_tools
    ```
 1. execute samples
    ```
-   source catkin_workspace/devel/setup.bash
+   source ~/catkin_workspace/devel/setup.bash
    source ~/genesis_ws/venv_genesis/bin/activate
    # training
    rosrun genesis_tools go2_train.py -l logs/go2_locomotion/test

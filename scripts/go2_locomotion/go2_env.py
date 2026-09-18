@@ -33,7 +33,7 @@ class Go2Env:
         self.scene = gs.Scene(
             sim_options=gs.options.SimOptions(dt=self.dt, substeps=2),
             viewer_options=gs.options.ViewerOptions(
-                max_FPS=int(0.5 / self.dt),
+                # refresh_rate=int(0.5 / self.dt),
                 camera_pos=(1.0, 4.0, 0.3),
                 camera_lookat=(1.0, 0.0, 0.3),
                 camera_fov=40,
@@ -49,7 +49,7 @@ class Go2Env:
         )
 
         # add ground
-        terrain_cfg = env_cfg["terrain"]
+        terrain_cfg = env_cfg.get("terrain", {"use_terrain": False})
         self.use_terrain = terrain_cfg.get("use_terrain", False)
         if self.use_terrain:
             ## terrain
@@ -58,8 +58,8 @@ class Go2Env:
             center_offset = - subterrain_grids * self.subterrain_size / 2
             terrain = gs.morphs.Terrain(
                 pos=tuple(center_offset.cpu().tolist() + [0.0]),
-                n_subterrains=subterrain_grids.cpu().tolist(),
-                subterrain_size=self.subterrain_size.cpu().tolist(),
+                n_subterrains=tuple(subterrain_grids.cpu().tolist()),
+                subterrain_size=tuple(self.subterrain_size.cpu().tolist()),
                 horizontal_scale=terrain_cfg["horizontal_scale"],
                 vertical_scale=terrain_cfg["vertical_scale"],
                 subterrain_types=terrain_cfg["subterrain_types"],
@@ -71,9 +71,10 @@ class Go2Env:
             self.ground = self.scene.add_entity(gs.morphs.URDF(file="urdf/plane/plane.urdf", fixed=True))
 
         # height field for setting initial z positions matched to the ground heiht in reset_init_pos
-        if hasattr(self.ground, "terrain_hf"): # when using terrain
+        terrain_hf = getattr(self.ground, "terrain_hf", None)
+        if terrain_hf is not None:  # when using terrain
             self.height_field = (
-                torch.from_numpy(self.ground.terrain_hf).float().to(self.device)
+                torch.from_numpy(terrain_hf).float().to(self.device)
                 * terrain_cfg["vertical_scale"]
                 )
         else: # generate pseudo height_field (all 0) when using plane
@@ -154,9 +155,14 @@ class Go2Env:
         self.commands[envs_idx, 2] = gs_rand_float(*self.command_cfg["ang_vel_range"], (len(envs_idx),), gs.device)
         if self.num_envs == 1 and len(envs_idx) > 0:
             # set constant velocity
-            self.commands[envs_idx, 0] = torch.full((len(envs_idx),), self.command_cfg["lin_vel_x_range"][1], device=self.device)
-            self.commands[envs_idx, 1] = torch.zeros((len(envs_idx),), device=self.device)
-            self.commands[envs_idx, 2] = torch.zeros((len(envs_idx),), device=self.device)
+            self.commands[envs_idx, 0] = torch.full(
+                (len(envs_idx),),
+                self.command_cfg["lin_vel_x_range"][1],
+                dtype=gs.tc_float,
+                device=self.device,
+            )
+            self.commands[envs_idx, 1] = torch.zeros((len(envs_idx),), dtype=gs.tc_float, device=self.device)
+            self.commands[envs_idx, 2] = torch.zeros((len(envs_idx),), dtype=gs.tc_float, device=self.device)
             print(f"resample comamnds {self.commands}")
 
     def step(self, actions):
@@ -194,6 +200,7 @@ class Go2Env:
         self.reset_buf = self.episode_length_buf > self.max_episode_length
         self.reset_buf |= torch.abs(self.base_euler[:, 1]) > self.env_cfg["termination_if_pitch_greater_than"]
         self.reset_buf |= torch.abs(self.base_euler[:, 0]) > self.env_cfg["termination_if_roll_greater_than"]
+        self.reset_buf |= self.scene.rigid_solver.get_error_envs_mask()  # reset environments with solver errors
 
         time_out_idx = (self.episode_length_buf > self.max_episode_length).nonzero(as_tuple=False).flatten()
         self.extras["time_outs"] = torch.zeros_like(self.reset_buf, device=gs.device, dtype=gs.tc_float)
