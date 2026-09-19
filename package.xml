@@ -13,6 +13,7 @@
   <exec_depend>python3</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-setuptools</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
 
   <!-- <exec_depend>genesis-world</exec_depend> -->
 
