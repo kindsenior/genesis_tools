@@ -8,19 +8,18 @@ catkin_python_setup()
 
 catkin_package()
 
-# Install Python libraries for releasse
-# install(
-#   DIRECTORY src/genesis_tools
-#   DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
-# )
-
-# Install python scripts
-# file(GLOB_RECURSE PYTHON_SCRIPTS
-#   RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-#   scripts/*.py
-# )
-
-# catkin_install_python(
-#   PROGRAMS ${PYTHON_SCRIPTS}
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+# Preserve the env-based shebang: catkin is configured with system Python 3.8,
+# while these programs run in the activated Genesis Python 3.10 virtualenv.
+install(
+  PROGRAMS
+  scripts/export_cfgs_to_yaml.py
+  scripts/go2_locomotion/go2_backflip.py
+  scripts/go2_locomotion/go2_eval.py
+  scripts/go2_locomotion/go2_export.py
+  scripts/go2_locomotion/go2_test.py
+  scripts/go2_locomotion/go2_train.py
+  scripts/sample_bipedal_robot_locomotion/sbr1_eval.py
+  scripts/sample_bipedal_robot_locomotion/sbr1_export.py
+  scripts/sample_bipedal_robot_locomotion/sbr1_train.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
