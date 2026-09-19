@@ -27,6 +27,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--log_dir", type=str, default="logs/go2-walking/test")
     parser.add_argument("-B", "--num_envs", type=int, default=1)
+    # Require an explicit checkpoint to avoid evaluating the wrong model.
     parser.add_argument("--ckpt", type=int, required=True, help="checkpoint to load")
     args = parser.parse_args()
 

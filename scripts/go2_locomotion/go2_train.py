@@ -104,8 +104,8 @@ def get_cfgs():
         "kp": 20.0,
         "kd": 0.5,
         # termination
-        # "termination_if_roll_greater_than": 10,  # degree
-        # "termination_if_pitch_greater_than": 10,
+        # Genesis uses 10 degrees in its original Go2 sample. Keep 45 degrees here
+        # to avoid premature termination when training on uneven terrain.
         "termination_if_roll_greater_than": 45,  # degree
         "termination_if_pitch_greater_than": 45,
         # base pose
