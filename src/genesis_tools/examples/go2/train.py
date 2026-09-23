@@ -1,7 +1,6 @@
 #!/usr/bin/env -S python3 -i
 
 import argparse
-import os
 from pathlib import Path
 import shutil
 from importlib import metadata
@@ -190,21 +189,35 @@ def main():
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--ckpt", type=int, default=None)
     parser.add_argument("--max_iterations", type=int, default=101)
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Delete the existing log directory before training.",
+    )
     parser.add_argument("-r", "--resume", type=bool, default=False)
     parser.add_argument("-rp", "--resume_path", type=str, default=None)
     args = parser.parse_args()
 
-    log_dir = f"{args.log_dir}"
+    log_dir = Path(args.log_dir)
+    if log_dir.exists() and not args.overwrite:
+        parser.error(
+            f"Log directory already exists: {log_dir}\n"
+            "Specify a different -l/--log_dir, or use --overwrite "
+            "to delete the existing results."
+        )
+
     env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
     train_cfg = get_train_cfg(args.max_iterations)
 
-    if os.path.exists(log_dir):
+    gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
+
+    if args.overwrite and log_dir.exists():
         shutil.rmtree(log_dir)
-    os.makedirs(log_dir, exist_ok=True)
+    log_dir.mkdir(parents=True)
 
     # save cfgs
     save_cfgs_yaml(
-        Path(log_dir) / "cfgs.yaml",
+        log_dir / "cfgs.yaml",
         env_cfg,
         obs_cfg,
         reward_cfg,
@@ -212,19 +225,17 @@ def main():
         train_cfg,
     )
 
-    gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
-
     env = Go2Env(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
 
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device=gs.device)
+    runner = OnPolicyRunner(env, train_cfg, str(log_dir), device=gs.device)
 
     # load a pretrained model and optimizer for resume
     ## added to the original code for resume functionality
     if args.resume:
         # use parent path of log_dir as resume_path
-        resume_path = Path(log_dir).parent / f"model_{args.ckpt}.pt" if args.resume_path is None else args.resume_path
+        resume_path = log_dir.parent / f"model_{args.ckpt}.pt" if args.resume_path is None else args.resume_path
         print(f"resume from {resume_path}")
         runner.load(resume_path)
 
