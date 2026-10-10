@@ -140,6 +140,37 @@ python -m genesis_tools.examples.go2.export \
 Both export paths create `policy_traced.pt` for loading from LibTorch. Training,
 evaluation, and export use `cfgs.yaml` as the canonical configuration artifact.
 
+### Model and source provenance
+
+`genesis_tools.provenance` provides shared helpers for content-addressed robot
+model snapshots and training provenance. A model hash covers the URDF, every
+file resource referenced by the URDF, and the Genesis model-build options.
+Snapshots retain the original relative paths for archival and fallback use.
+`inspect_model_source()` and `verify_model_source()` let a caller load the
+original source model while checking that it still matches the archived hash.
+
+Git provenance records the revision, remote, branch, status, all untracked file
+names, and an AI-readable patch for tracked and untracked text files. Package
+versions and the Python interpreter are written separately to
+`software_environment.yaml`. The JAXON3 example in `genesis_tutorials` uses
+these helpers with exact run paths and a shared content-addressed robot-model
+store.
+
+### Motion recording
+
+`genesis_tools.motion_recording.MotionRecorder` is the robot-independent
+writer for structural-analysis motion bundles. It accepts numeric/string
+samples from a robot-specific sampler, separates sequences at explicit reset
+boundaries, derives joint acceleration within each continuous sequence, and
+writes compressed NPZ files that can be opened with `allow_pickle=False`.
+Bundle schema 1 requires a hashed `effective_dynamics.yaml` and uses sequence
+schema 1 for each time-series NPZ. Keeping the two version fields distinct lets
+the motion-array format evolve independently while recording the built
+simulator's link inertias, joint frames/axes, and runtime DOF parameters needed
+for model reconstruction.
+Robot-specific Genesis state and contact extraction, policy loading, and link
+selection remain in `genesis_tutorials`; JAXON3 is the first adapter.
+
 ### Legacy pickle conversion
 
 `export_cfgs_to_yaml.py` is only for trusted legacy or upstream logs containing
