@@ -9,6 +9,7 @@ import genesis as gs
 from genesis_tools.config import load_cfgs_yaml
 from genesis_tools.examples.sbr1.env import Sbr1Env
 from genesis_tools.exporter import export_policy
+from genesis_tools.rsl import TensorEnvAdapter, require_rsl_rl_version
 
 
 def main():
@@ -18,6 +19,7 @@ def main():
     parser.add_argument("--viewer", action="store_true")
     args = parser.parse_args()
 
+    require_rsl_rl_version()
     gs.init()
     env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = load_cfgs_yaml(
         args.log_dir / "cfgs.yaml"
@@ -32,7 +34,7 @@ def main():
         command_cfg=command_cfg,
         show_viewer=args.viewer,
     )
-    export_policy(env, train_cfg, args.log_dir, args.ckpt, gs.device)
+    export_policy(TensorEnvAdapter(env), train_cfg, args.log_dir, args.ckpt, gs.device)
 
 
 if __name__ == "__main__":

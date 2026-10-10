@@ -15,6 +15,7 @@ class Sbr1Env:
         self.num_obs = obs_cfg["num_obs"]
         self.num_privileged_obs = None
         self.num_actions = env_cfg["num_actions"]
+        self.cfg = env_cfg
         self.num_commands = command_cfg["num_commands"]
         self.device = gs.device
 
@@ -260,9 +261,11 @@ class Sbr1Env:
 
         self._resample_commands(envs_idx)
 
-    def reset(self):
-        self.reset_buf[:] = True
-        self.reset_idx(torch.arange(self.num_envs, device=self.device))
+    def reset(self, envs_idx=None):
+        if envs_idx is None:
+            envs_idx = torch.arange(self.num_envs, device=self.device)
+        self.reset_buf[envs_idx] = True
+        self.reset_idx(envs_idx)
         return self.obs_buf, None
 
     # ------------ reward functions----------------
