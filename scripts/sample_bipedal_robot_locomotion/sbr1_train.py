@@ -1,4 +1,4 @@
-#!/usr/bin/env -S python3 -i
+#!/usr/bin/env python3
 
 from genesis_tools.examples.sbr1.train import main
 
