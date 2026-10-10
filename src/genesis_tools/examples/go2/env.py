@@ -3,6 +3,7 @@
 import math
 
 import torch
+from tensordict import TensorDict
 
 import genesis as gs
 from genesis.utils.geom import quat_to_xyz, transform_by_quat, inv_quat, transform_quat_by_quat
@@ -18,6 +19,7 @@ class Go2Env:
         self.num_obs = obs_cfg["num_obs"]
         self.num_privileged_obs = None
         self.num_actions = env_cfg["num_actions"]
+        self.cfg = env_cfg
         self.num_commands = command_cfg["num_commands"]
         self.device = gs.device
 
@@ -163,13 +165,13 @@ class Go2Env:
         self.last_dof_vel = torch.zeros_like(self.actions)
         self.base_pos = torch.empty((self.num_envs, 3), dtype=gs.tc_float, device=gs.device)
         self.base_quat = torch.empty((self.num_envs, 4), dtype=gs.tc_float, device=gs.device)
+        self.base_euler = torch.empty((self.num_envs, 3), dtype=gs.tc_float, device=gs.device)
         self.default_dof_pos = torch.tensor(
             [self.env_cfg["default_joint_angles"][name] for name in self.env_cfg["joint_names"]],
             dtype=gs.tc_float,
             device=gs.device,
         )
         self.extras = dict()  # extra information for logging
-        self.extras["observations"] = dict()
 
         # prepare reward functions and multiply reward scales by dt
         self.reward_functions, self.episode_sums = dict(), dict()
@@ -177,6 +179,8 @@ class Go2Env:
             self.reward_scales[name] *= self.dt
             self.reward_functions[name] = getattr(self, "_reward_" + name)
             self.episode_sums[name] = torch.zeros((self.num_envs,), dtype=gs.tc_float, device=gs.device)
+
+        self.reset()
 
     def _resample_commands(self, envs_idx):
         commands = gs_rand(*self.commands_limits, (self.num_envs,))
@@ -219,7 +223,13 @@ class Go2Env:
         self.dof_pos = self.robot.get_dofs_position(self.motors_dof_idx)
         self.dof_vel = self.robot.get_dofs_velocity(self.motors_dof_idx)
 
-        # resample commands
+        # compute reward before resetting terminated environments
+        self.rew_buf.zero_()
+        for name, reward_func in self.reward_functions.items():
+            rew = reward_func() * self.reward_scales[name]
+            self.rew_buf += rew
+            self.episode_sums[name] += rew
+
         self._resample_commands(self.episode_length_buf % int(self.env_cfg["resampling_time_s"] / self.dt) == 0)
 
         # check termination and reset
@@ -234,29 +244,16 @@ class Go2Env:
         # Reset environment if necessary
         self._reset_idx(self.reset_buf)
 
-        # compute reward
-        self.rew_buf[:] = 0.0
-        for name, reward_func in self.reward_functions.items():
-            rew = reward_func() * self.reward_scales[name]
-            self.rew_buf += rew
-            self.episode_sums[name] += rew
-
         # update observations
         self._update_observation()
 
         self.last_actions.copy_(self.actions)
         self.last_dof_vel.copy_(self.dof_vel)
 
-        self.extras["observations"]["critic"] = self.obs_buf
-
-        return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
+        return self.get_observations(), self.rew_buf, self.reset_buf, self.extras
 
     def get_observations(self):
-        self.extras["observations"]["critic"] = self.obs_buf
-        return self.obs_buf, self.extras
-
-    def get_privileged_observations(self):
-        return None
+        return TensorDict({"policy": self.obs_buf}, batch_size=[self.num_envs])
 
     def _reset_idx(self, envs_idx=None):
         # reset state
@@ -351,7 +348,7 @@ class Go2Env:
     def reset(self):
         self._reset_idx()
         self._update_observation()
-        return self.obs_buf, None
+        return self.get_observations()
 
     # ------------ reward functions----------------
     def _reward_tracking_lin_vel(self):

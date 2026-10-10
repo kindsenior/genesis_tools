@@ -3,29 +3,18 @@
 import argparse
 from pathlib import Path
 import shutil
-from importlib import metadata
-
-try:
-    try:
-        if metadata.version("rsl-rl"):
-            raise ImportError
-    except metadata.PackageNotFoundError:
-        if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
-except (metadata.PackageNotFoundError, ImportError) as e:
-    raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
 
 import genesis as gs
 
-from genesis_tools.config import save_cfgs_yaml
+from genesis_tools.config import load_cfgs_yaml, save_cfgs_yaml
 from genesis_tools.examples.go2.env import Go2Env
+from genesis_tools.rsl import TimedOnPolicyRunner, require_rsl_rl_version
 
 
-def get_train_cfg(max_iterations):
+def get_train_cfg(exp_name="go2-walking"):
     train_cfg_dict = {
         "algorithm": {
-            "class_name": "PPO",
+            "class_name": "rsl_rl.algorithms:PPO",
             "clip_param": 0.2,
             "desired_kl": 0.01,
             "entropy_coef": 0.01,
@@ -39,29 +28,28 @@ def get_train_cfg(max_iterations):
             "use_clipped_value_loss": True,
             "value_loss_coef": 1.0,
         },
-        "init_member_classes": {},
-        "policy": {
+        "actor": {
+            "class_name": "rsl_rl.models:MLPModel",
+            "hidden_dims": [512, 256, 128],
             "activation": "elu",
-            "actor_hidden_dims": [512, 256, 128],
-            "critic_hidden_dims": [512, 256, 128],
-            "init_noise_std": 1.0,
-            "class_name": "ActorCritic",
+            "obs_normalization": True,
+            "distribution_cfg": {
+                "class_name": "rsl_rl.modules:GaussianDistribution",
+                "init_std": 1.0,
+                "std_type": "scalar",
+            },
         },
-        "runner": {
-            "checkpoint": -1,
-            "load_run": -1,
-            "log_interval": 1,
-            "max_iterations": max_iterations,
-            "record_interval": -1,
-            "resume": False,
-            "resume_path": None,
-            "run_name": "",
+        "critic": {
+            "class_name": "rsl_rl.models:MLPModel",
+            "hidden_dims": [512, 256, 128],
+            "activation": "elu",
+            "obs_normalization": True,
         },
-        "runner_class_name": "OnPolicyRunner",
+        "obs_groups": {"actor": ["policy"], "critic": ["policy"]},
         "num_steps_per_env": 24,
         "save_interval": 100,
-        "empirical_normalization": None,
-        "seed": 1,
+        "run_name": exp_name,
+        "logger": "tensorboard",
     }
 
     return train_cfg_dict
@@ -185,59 +173,71 @@ def get_cfgs():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--log_dir", type=str, default="logs/go2-walking/test")
-    parser.add_argument("-B", "--num_envs", type=int, default=4096)
+    parser.add_argument("-l", "--log_dir", type=Path, default=Path("logs/go2-walking/test"))
+    parser.add_argument("-B", "--num_envs", "--num-envs", type=int, default=4096)
     parser.add_argument("--ckpt", type=int, default=None)
-    parser.add_argument("--max_iterations", type=int, default=101)
+    parser.add_argument("--max_iterations", "--max-iterations", type=int, default=101)
+    parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Delete the existing log directory before training.",
     )
-    parser.add_argument("-r", "--resume", type=bool, default=False)
-    parser.add_argument("-rp", "--resume_path", type=str, default=None)
+    parser.add_argument("-r", "--resume", action="store_true")
+    parser.add_argument("-rp", "--resume_path", type=Path, default=None)
     args = parser.parse_args()
 
-    log_dir = Path(args.log_dir)
-    if log_dir.exists() and not args.overwrite:
+    require_rsl_rl_version()
+    log_dir = args.log_dir
+    if args.resume and args.overwrite:
+        parser.error("--resume and --overwrite cannot be used together")
+    if args.resume and args.ckpt is None and args.resume_path is None:
+        parser.error("--resume requires --ckpt or --resume_path")
+    if log_dir.exists() and not args.overwrite and not args.resume:
         parser.error(
             f"Log directory already exists: {log_dir}\n"
             "Specify a different -l/--log_dir, or use --overwrite "
             "to delete the existing results."
         )
 
-    env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
-    train_cfg = get_train_cfg(args.max_iterations)
+    if args.resume:
+        env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = load_cfgs_yaml(
+            log_dir / "cfgs.yaml"
+        )
+    else:
+        env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
+        train_cfg = get_train_cfg(log_dir.name)
 
-    gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
+    gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=args.seed, performance_mode=True)
 
     if args.overwrite and log_dir.exists():
         shutil.rmtree(log_dir)
-    log_dir.mkdir(parents=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
 
-    # save cfgs
-    save_cfgs_yaml(
-        log_dir / "cfgs.yaml",
-        env_cfg,
-        obs_cfg,
-        reward_cfg,
-        command_cfg,
-        train_cfg,
-    )
+    if not args.resume:
+        save_cfgs_yaml(
+            log_dir / "cfgs.yaml",
+            env_cfg,
+            obs_cfg,
+            reward_cfg,
+            command_cfg,
+            train_cfg,
+        )
 
     env = Go2Env(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
 
-    runner = OnPolicyRunner(env, train_cfg, str(log_dir), device=gs.device)
+    runner = TimedOnPolicyRunner(env, train_cfg, str(log_dir), device=gs.device)
 
     # load a pretrained model and optimizer for resume
     ## added to the original code for resume functionality
     if args.resume:
-        # use parent path of log_dir as resume_path
-        resume_path = log_dir.parent / f"model_{args.ckpt}.pt" if args.resume_path is None else args.resume_path
+        resume_path = log_dir / f"model_{args.ckpt}.pt" if args.resume_path is None else args.resume_path
+        if not resume_path.is_file():
+            parser.error(f"Checkpoint not found: {resume_path}")
         print(f"resume from {resume_path}")
-        runner.load(resume_path)
+        runner.load(resume_path, map_location=str(gs.device))
 
     runner.learn(num_learning_iterations=args.max_iterations, init_at_random_ep_len=True)
 

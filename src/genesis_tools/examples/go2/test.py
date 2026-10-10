@@ -1,6 +1,5 @@
 import argparse
 from pathlib import Path
-from importlib import metadata
 
 import torch
 
@@ -9,21 +8,11 @@ import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
-try:
-    try:
-        if metadata.version("rsl-rl"):
-            raise ImportError
-    except metadata.PackageNotFoundError:
-        if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
-except (metadata.PackageNotFoundError, ImportError) as e:
-    raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
-
 import genesis as gs
 
 from genesis_tools.config import load_cfgs_yaml
 from genesis_tools.examples.go2.env import Go2Env
+from genesis_tools.rsl import TimedOnPolicyRunner, require_rsl_rl_version
 
 
 def main():
@@ -32,6 +21,7 @@ def main():
     parser.add_argument("--ckpt", type=int, default=100)
     args = parser.parse_args()
 
+    require_rsl_rl_version()
     gs.init()
 
     log_dir = Path(args.log_dir)
@@ -50,12 +40,12 @@ def main():
         show_viewer=True,
     )
 
-    runner = OnPolicyRunner(env, train_cfg, log_dir, device=gs.device)
+    runner = TimedOnPolicyRunner(env, train_cfg, str(log_dir), device=gs.device)
     resume_path = log_dir / f"model_{args.ckpt}.pt"
     runner.load(resume_path)
     policy = runner.get_inference_policy(device=gs.device)
 
-    obs, _ = env.reset()
+    env.reset()
 
     # plot height_field
     H, W = env.height_field.shape
