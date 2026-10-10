@@ -5,10 +5,18 @@
 - Ubuntu 20.04
 - Python 3.10
 - Genesis 1.3.3
-- rsl-rl-lib 2.2.4
+- rsl-rl-lib 5.5.1
+- PyTorch 2.11.0 (CUDA 12.8 or CPU wheel)
 
-The legacy `rsl-rl-lib==2.2.4` runner, policy configuration, and tensor
-observation interface are intentionally retained.
+The examples use the rsl-rl 5.5.1 actor/critic configuration and TensorDict
+observation groups. Checkpoints written by rsl-rl 2.2.4 are intentionally
+rejected with an explicit compatibility error; retrain them with this stack or
+evaluate them in the old environment.
+
+PyTorch is selected for the host's CUDA/driver environment, not by rsl-rl
+alone. The checked-in GPU lock is the stack validated here: PyTorch 2.11.0 with
+CUDA 12.8. Use the CPU lock on a CPU-only machine; PyTorch 2.8.0 is not a
+requirement of rsl-rl 5.5.1.
 
 ## Installation
 
@@ -59,11 +67,12 @@ Both methods use the dependency versions locked by `genesis_tools`.
 5. Confirm the installed versions.
 
    ```bash
-   python -c 'from importlib.metadata import version; print("genesis-world", version("genesis-world")); print("rsl-rl-lib", version("rsl-rl-lib"))'
+   python -c 'from importlib.metadata import version; print("genesis-world", version("genesis-world")); print("rsl-rl-lib", version("rsl-rl-lib")); print("torch", version("torch"))'
    ```
 
    The expected versions are `genesis-world 1.3.3` and
-   `rsl-rl-lib 2.2.4`.
+   `rsl-rl-lib 5.5.1`, and the PyTorch variant selected by the requirements
+   file (`2.11.0+cu128` or `2.11.0+cpu`).
 
 ### Python only
 
@@ -95,11 +104,12 @@ Both methods use the dependency versions locked by `genesis_tools`.
 4. Confirm the installed versions.
 
    ```bash
-   python -c 'from importlib.metadata import version; print("genesis-world", version("genesis-world")); print("rsl-rl-lib", version("rsl-rl-lib"))'
+   python -c 'from importlib.metadata import version; print("genesis-world", version("genesis-world")); print("rsl-rl-lib", version("rsl-rl-lib")); print("torch", version("torch"))'
    ```
 
    The expected versions are `genesis-world 1.3.3` and
-   `rsl-rl-lib 2.2.4`.
+   `rsl-rl-lib 5.5.1`, and the PyTorch variant selected by the requirements
+   file (`2.11.0+cu128` or `2.11.0+cpu`).
 
 ## Samples
 
@@ -139,6 +149,34 @@ python -m genesis_tools.examples.go2.export \
 
 Both export paths create `policy_traced.pt` for loading from LibTorch. Training,
 evaluation, and export use `cfgs.yaml` as the canonical configuration artifact.
+An existing training directory is rejected unless `--resume` or the explicit
+destructive option `--overwrite` is supplied.
+
+### SBR1
+
+The packaged SBR1 example uses the same shared rsl-rl boundary as Go2 while
+keeping its robot-specific environment in `genesis_tools.examples.sbr1`.
+
+```bash
+# Catkin entry points
+rosrun genesis_tools sbr1_train.py -l logs/sbr1_locomotion/test
+rosrun genesis_tools sbr1_eval.py \
+  -l logs/sbr1_locomotion/test --ckpt 100
+rosrun genesis_tools sbr1_export.py \
+  -l logs/sbr1_locomotion/test --ckpt 100
+
+# Python module entry points
+python -m genesis_tools.examples.sbr1.train \
+  -l logs/sbr1_locomotion/test
+python -m genesis_tools.examples.sbr1.eval \
+  -l logs/sbr1_locomotion/test --ckpt 100
+python -m genesis_tools.examples.sbr1.export \
+  -l logs/sbr1_locomotion/test --ckpt 100
+```
+
+SBR1 also writes `cfgs.yaml`, rejects accidental replacement of an existing
+training directory, supports checkpoint resume, and exports
+`policy_traced.pt`.
 
 ### Model and source provenance
 
