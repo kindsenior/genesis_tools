@@ -64,6 +64,7 @@ class FakeTensorEnv:
     def __init__(self):
         self.episode_length_buf = torch.zeros(self.num_envs, dtype=torch.long)
         self.observations = torch.zeros(self.num_envs, 6)
+        self.step_kwargs = None
 
     def get_observations(self):
         return self.observations, {"observations": {"critic": self.observations}}
@@ -71,7 +72,8 @@ class FakeTensorEnv:
     def reset(self, envs_idx=None):
         return self.get_observations()
 
-    def step(self, actions):
+    def step(self, actions, **kwargs):
+        self.step_kwargs = kwargs
         self.observations = torch.cat([actions, actions, actions], dim=1).detach()
         self.episode_length_buf += 1
         dones = self.episode_length_buf >= self.max_episode_length
@@ -85,6 +87,18 @@ class FakeTensorEnv:
 
 
 class RslCompatibilityTest(unittest.TestCase):
+    def test_step_forwards_optional_environment_hooks(self):
+        wrapped = FakeTensorEnv()
+        env = TensorEnvAdapter(wrapped)
+        callback = object()
+
+        env.step(
+            torch.zeros(wrapped.num_envs, wrapped.num_actions),
+            physics_step_callback=callback,
+        )
+
+        self.assertIs(wrapped.step_kwargs["physics_step_callback"], callback)
+
     def test_training_checkpoint_resume_and_export(self):
         self.assertEqual(require_rsl_rl_version(), "5.5.1")
         env = TensorEnvAdapter(FakeTensorEnv())

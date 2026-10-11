@@ -84,12 +84,17 @@ class MotionSequence:
 class MotionRecorder:
     """Collect samples and split them whenever the environment resets."""
 
-    def __init__(self, dt, *, static_data=None, minimum_samples=2):
+    def __init__(
+        self, dt, *, time_offset=0.0, static_data=None, minimum_samples=2,
+    ):
         if dt <= 0:
             raise ValueError("dt must be positive")
+        if not math.isfinite(time_offset) or time_offset < 0.0:
+            raise ValueError("time_offset must be finite and non-negative")
         if minimum_samples < 1:
             raise ValueError("minimum_samples must be at least one")
         self.dt = float(dt)
+        self.time_offset = float(time_offset)
         self.static_data = {
             key: self._safe_array(value)
             for key, value in (static_data or {}).items()
@@ -168,7 +173,10 @@ class MotionRecorder:
         for index, sequence in enumerate(self.sequences):
             stem = f"sequence_{index:03d}"
             sample_count = len(next(iter(sequence.samples.values())))
-            time = np.arange(sample_count, dtype=np.float64) * self.dt
+            time = (
+                self.time_offset
+                + np.arange(sample_count, dtype=np.float64) * self.dt
+            )
             arrays = {
                 "schema_version": np.asarray(MOTION_SEQUENCE_SCHEMA_VERSION),
                 "time": time,

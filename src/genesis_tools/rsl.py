@@ -82,8 +82,11 @@ class TensorEnvAdapter:
         observations, extras = self.env.reset(envs_idx)
         return self._as_tensordict(observations, extras), extras
 
-    def step(self, actions):
-        observations, rewards, dones, extras = self.env.step(actions)
+    def step(self, actions, **kwargs):
+        """Step the wrapped environment, forwarding optional hooks."""
+        observations, rewards, dones, extras = self.env.step(
+            actions, **kwargs
+        )
         return self._as_tensordict(observations, extras), rewards, dones, extras
 
 

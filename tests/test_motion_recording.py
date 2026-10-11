@@ -76,6 +76,21 @@ class MotionRecorderTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "fields or shapes changed"):
             recorder.append({"position": np.zeros(3)})
 
+    def test_writes_post_step_time_offset(self):
+        recorder = MotionRecorder(0.0025, time_offset=0.0025)
+        recorder.append({"position": np.zeros(1)})
+        recorder.append({"position": np.ones(1)})
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            recorder.write(
+                output,
+                {"robot_name": "test"},
+                effective_dynamics=EFFECTIVE_DYNAMICS,
+            )
+            with np.load(output / "sequences" / "sequence_000.npz") as data:
+                np.testing.assert_allclose(data["time"], [0.0025, 0.005])
+
     def test_rejects_object_arrays(self):
         with self.assertRaisesRegex(TypeError, "object arrays"):
             MotionRecorder(0.01, static_data={"bad": np.asarray([{}])})
