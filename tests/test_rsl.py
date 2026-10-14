@@ -7,6 +7,7 @@ import torch
 from genesis_tools.rsl import (
     TensorEnvAdapter,
     TimedOnPolicyRunner,
+    resolve_learning_iterations,
     require_actor_critic_checkpoint,
     require_rsl_rl_version,
 )
@@ -87,6 +88,72 @@ class FakeTensorEnv:
 
 
 class RslCompatibilityTest(unittest.TestCase):
+    def test_final_local_iteration_includes_zero(self):
+        self.assertEqual(
+            resolve_learning_iterations(
+                max_iterations=100,
+                stop_iteration=None,
+                default_max_iterations=10,
+            ),
+            101,
+        )
+        self.assertEqual(
+            resolve_learning_iterations(
+                max_iterations=None,
+                stop_iteration=None,
+                default_max_iterations=10,
+            ),
+            11,
+        )
+
+    def test_global_stop_accounts_for_resume_iteration(self):
+        self.assertEqual(
+            resolve_learning_iterations(
+                max_iterations=None,
+                stop_iteration=150,
+                default_max_iterations=10,
+                current_iteration=100,
+                resumed=True,
+            ),
+            51,
+        )
+        self.assertEqual(
+            resolve_learning_iterations(
+                max_iterations=None,
+                stop_iteration=100,
+                default_max_iterations=10,
+                current_iteration=100,
+                resumed=True,
+            ),
+            0,
+        )
+
+    def test_iteration_arguments_reject_invalid_ranges(self):
+        with self.assertRaisesRegex(ValueError, "mutually exclusive"):
+            resolve_learning_iterations(
+                max_iterations=10,
+                stop_iteration=20,
+                default_max_iterations=10,
+            )
+        with self.assertRaisesRegex(ValueError, "current iteration"):
+            resolve_learning_iterations(
+                max_iterations=None,
+                stop_iteration=99,
+                default_max_iterations=10,
+                current_iteration=100,
+                resumed=True,
+            )
+
+    def test_global_stop_zero_runs_the_first_fresh_iteration(self):
+        self.assertEqual(
+            resolve_learning_iterations(
+                max_iterations=None,
+                stop_iteration=0,
+                default_max_iterations=10,
+            ),
+            1,
+        )
+
     def test_step_forwards_optional_environment_hooks(self):
         wrapped = FakeTensorEnv()
         env = TensorEnvAdapter(wrapped)

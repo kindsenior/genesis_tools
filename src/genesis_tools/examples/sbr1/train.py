@@ -8,7 +8,13 @@ import genesis as gs
 
 from genesis_tools.config import load_cfgs_yaml, save_cfgs_yaml
 from genesis_tools.examples.sbr1.env import Sbr1Env
-from genesis_tools.rsl import TensorEnvAdapter, TimedOnPolicyRunner, require_rsl_rl_version
+from genesis_tools.rsl import (
+    TensorEnvAdapter,
+    TimedOnPolicyRunner,
+    add_iteration_arguments,
+    require_rsl_rl_version,
+    resolve_learning_iterations,
+)
 import numpy as np
 
 def get_train_cfg(exp_name="sbr1-locomotion"):
@@ -143,10 +149,12 @@ def get_cfgs():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-l", "--log_dir", type=Path, default=Path("logs/sbr1_locomotion/test"))
+    parser.add_argument("-l", "--log-dir", "--log_dir", type=Path, default=Path("logs/sbr1_locomotion/test"))
     parser.add_argument("-B", "--num_envs", "--num-envs", type=int, default=4096)
     parser.add_argument("--ckpt", type=int, default=None)
-    parser.add_argument("--max_iterations", "--max-iterations", type=int, default=1001)
+    # Local integration: Use a final local index or an absolute global stop
+    # consistently across the repository's robot training samples.
+    add_iteration_arguments(parser, default_max_iterations=1000)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument(
         "--overwrite",
@@ -154,7 +162,7 @@ def main():
         help="Delete the existing log directory before training.",
     )
     parser.add_argument("-r", "--resume", action="store_true")
-    parser.add_argument("-rp", "--resume_path", type=Path, default=None)
+    parser.add_argument("-rp", "--resume-path", "--resume_path", type=Path, default=None)
     args = parser.parse_args()
 
     require_rsl_rl_version()
@@ -207,7 +215,26 @@ def main():
         print(f"resume from {resume_path}")
         runner.load(resume_path, map_location=str(gs.device))
 
-    runner.learn(num_learning_iterations=args.max_iterations, init_at_random_ep_len=True)
+    try:
+        num_learning_iterations = resolve_learning_iterations(
+            max_iterations=args.max_iterations,
+            stop_iteration=args.stop_iteration,
+            default_max_iterations=args.default_max_iterations,
+            current_iteration=runner.current_learning_iteration,
+            resumed=args.resume,
+        )
+    except ValueError as error:
+        parser.error(str(error))
+    if num_learning_iterations == 0:
+        print(
+            "Training skipped: --stop-iteration already equals the "
+            "loaded checkpoint iteration."
+        )
+        return
+    runner.learn(
+        num_learning_iterations=num_learning_iterations,
+        init_at_random_ep_len=True,
+    )
 
 if __name__ == "__main__":
     main()

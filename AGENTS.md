@@ -1,13 +1,57 @@
-# Repository instructions
+# リポジトリ作業規則
 
-## Cross-repository documentation
+## リポジトリ間の役割分担
 
-- When editing `README.md`, inspect the READMEs in both `genesis_tools` and
-  `genesis_tutorials`, when both repositories are available.
-- Keep shared section structure, terminology, installation descriptions, and
-  command formatting consistent between the two repositories.
-- Update both READMEs when a change affects their shared documentation.
-- Preserve repository-specific features, dependencies, and limitations; do not
-  document unsupported functionality merely for consistency.
-- If the sibling repository is unavailable, report that instead of guessing
-  its contents.
+- ロボットに依存しない再利用可能な共通機能は`genesis_tools`に置く。
+- ロボット固有の設定、asset、状態抽出、環境動作は各ロボットサンプル側に置く。
+- 共通化によって処理の所在やロボット固有の動作が分かりにくくなる場合は、
+  無理に共通化せず各サンプル側に残す。
+
+## 上流実装との対応
+
+- サンプルと上流実装の参照元の対応を以下に示す。
+  - `genesis_tutorials`のJAXON3サンプル：`jsk_genesis_robots`
+  - `genesis_tools`のGo2サンプル：Genesis公式のGo2サンプル
+- ロボット固有の観測、action、報酬、学習アルゴリズム、環境動作、クラス構成は、
+  意図的な差分として明記する場合を除き、参照元の上流実装に合わせる。
+- 以下のようなリポジトリ全体に関係する統合機能は維持する。
+  - 学習ログの安全な上書き処理
+  - YAML設定
+  - checkpoint互換性検査
+  - provenance
+  - ROS entry point
+  - Python module entry point
+- 上流由来のコードに統合機能を追加する場合は、その差分をプログラム内で
+  `# Local integration: <reason>`という形式のコメントを付けて明記する。
+
+## サンプル間の一貫性
+
+- 同等のワークフローについては、ロボット固有の設定や学習タスクに関係しない
+  仕様と操作方法をロボットサンプル間で統一する。対象には、コマンドライン
+  オプションの名前、alias、意味、既定値、ログパス、resume、上書き防止、
+  exportの動作などを含む。
+- 共通化できる実装は「リポジトリ間の役割分担」に従って配置する。
+- 共通仕様から外れるロボット固有の差分は、プログラム内で
+  `# Robot-specific: <reason>`という形式のコメントを付けて明記する。
+- 上流実装のあるサンプルをそれぞれの上流実装に合わせた後、その他のサンプルを
+  共通インターフェースとリポジトリ規約に合わせる。
+
+## リポジトリ間の文書同期
+
+- `README.md`を編集する場合は、両方のリポジトリが利用可能であれば
+  `genesis_tools`と`genesis_tutorials`のREADMEを確認する。
+- 両リポジトリで共有する節構成、用語、installation説明、コマンド表記を揃える。
+- 共通文書に関係する変更では両方のREADMEを更新する。
+- リポジトリ固有の機能、依存関係、制限は維持し、表記を揃えるためだけに
+  未対応の機能を記載しない。
+- もう一方のリポジトリを確認できない場合は、内容を推測せずその旨を報告する。
+
+## リリースtag
+
+- 依存関係の基準版を示すtagには、次の形式を使用する。
+  `genesis-v<Genesis version>_rsl-rl-v<rsl-rl version>[_<purpose>]`
+- 同じ依存関係について用途別の基準点が必要な場合だけ`_<purpose>`を付ける。
+- tagはannotated tagとして作成する。
+- tagを作成する前に必ずREADMEを更新し、tag対象の実装との整合性を確認する。
+- 関連する変更をcommitして検証した後にtagを作成する。
+- tagをremoteへ明示的にpushし、remote上のtagとcommitを確認する。

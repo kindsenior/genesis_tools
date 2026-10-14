@@ -124,8 +124,9 @@ same log directory for training, evaluation, and export.
 source <catkin_workspace>/devel/setup.bash
 source ~/genesis_ws/venv_genesis/bin/activate
 
-# Training
-rosrun genesis_tools go2_train.py -l logs/go2_locomotion/test
+# Training: writes model_100.pt as the final checkpoint
+rosrun genesis_tools go2_train.py \
+  -l logs/go2_locomotion/test --max-iterations 100
 
 # Evaluation
 rosrun genesis_tools go2_eval.py \
@@ -140,7 +141,7 @@ rosrun genesis_tools go2_export.py \
 
 ```bash
 python -m genesis_tools.examples.go2.train \
-  -l logs/go2_locomotion/test
+  -l logs/go2_locomotion/test --max-iterations 100
 python -m genesis_tools.examples.go2.eval \
   -l logs/go2_locomotion/test --ckpt 100
 python -m genesis_tools.examples.go2.export \
@@ -151,6 +152,9 @@ Both export paths create `policy_traced.pt` for loading from LibTorch. Training,
 evaluation, and export use `cfgs.yaml` as the canonical configuration artifact.
 An existing training directory is rejected unless `--resume` or the explicit
 destructive option `--overwrite` is supplied.
+`--max-iterations N` runs iterations 0 through N for a fresh run, so the
+final checkpoint is `model_N.pt`. `--stop-iteration N` instead selects an
+absolute global iteration and is mutually exclusive with `--max-iterations`.
 
 ### SBR1
 
@@ -159,7 +163,8 @@ keeping its robot-specific environment in `genesis_tools.examples.sbr1`.
 
 ```bash
 # Catkin entry points
-rosrun genesis_tools sbr1_train.py -l logs/sbr1_locomotion/test
+rosrun genesis_tools sbr1_train.py \
+  -l logs/sbr1_locomotion/test --max-iterations 1000
 rosrun genesis_tools sbr1_eval.py \
   -l logs/sbr1_locomotion/test --ckpt 100
 rosrun genesis_tools sbr1_export.py \
@@ -167,7 +172,7 @@ rosrun genesis_tools sbr1_export.py \
 
 # Python module entry points
 python -m genesis_tools.examples.sbr1.train \
-  -l logs/sbr1_locomotion/test
+  -l logs/sbr1_locomotion/test --max-iterations 1000
 python -m genesis_tools.examples.sbr1.eval \
   -l logs/sbr1_locomotion/test --ckpt 100
 python -m genesis_tools.examples.sbr1.export \
