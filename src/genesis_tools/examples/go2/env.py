@@ -57,7 +57,8 @@ class Go2Env:
             show_viewer=show_viewer,
         )
 
-        # add ground
+        # Robot-specific: Support optional terrain and height-aware rewards in
+        # addition to upstream's flat-ground environment.
         terrain_cfg = env_cfg.get("terrain", {"use_terrain": False})
         self.use_terrain = terrain_cfg.get("use_terrain", False)
         if self.use_terrain:
@@ -189,7 +190,8 @@ class Go2Env:
         else:
             torch.where(envs_idx[:, None], commands, self.commands, out=self.commands)
 
-        # set constant commands for single environment
+        # Robot-specific: Use deterministic commands for a full reset so the
+        # local single-environment workflow follows the configured target.
         if envs_idx is None:
             # set constant velocity
             self.commands[:, 0] = torch.full(
@@ -256,7 +258,7 @@ class Go2Env:
         return TensorDict({"policy": self.obs_buf}, batch_size=[self.num_envs])
 
     def _reset_idx(self, envs_idx=None):
-        # reset state
+        # Robot-specific: Randomize reset yaw for terrain environments.
         ## use reset_qpos for resetting yaw direction
         # self.robot.set_qpos(self.init_qpos, envs_idx=envs_idx, zero_velocity=True, skip_forward=True)
         reset_qpos = self.init_qpos.clone()
@@ -388,6 +390,7 @@ class Go2Env:
 
             return torch.square(self.base_pos[:, 2] - target_height)
 
+    # Robot-specific: Retain optional Go2 dynamics randomization helpers.
     # ------------ randomization ----------------
     def randomize_link_properties(self):
         # scale mass of links

@@ -9,9 +9,28 @@
 
 ## 上流実装との対応
 
-- サンプルと上流実装の参照元の対応を以下に示す。
-  - `genesis_tutorials`のJAXON3サンプル：`jsk_genesis_robots`
-  - `genesis_tools`のGo2サンプル：Genesis公式のGo2サンプル
+- JAXON3
+  - 対象：`genesis_tutorials`のJAXON3サンプル
+  - 参照元：`start-jsk/jsk_genesis_robots`の`main`
+  - 参照範囲：`jaxon3/`
+  - 同期状態：`d7df43a65cd1662fde4f7ee0ea9f549793f48cb2`まで比較・反映済み
+- Go2
+  - 対象：`genesis_tools`のGo2サンプル
+  - 参照元：`Genesis-Embodied-AI/Genesis`の`main`
+  - 参照範囲：`examples/locomotion/go2_*.py`
+  - 同期状態：`v1.3.3`（`76f8f5b3457e7c6d6a078de2244066f9a8694c45`）まで比較・反映済み
+- SBR1
+  - 対象：`genesis_tools`のSBR1サンプル
+  - 参照元：同期対象として設定した上流実装なし
+- SampleRobot1
+  - 対象：`genesis_tutorials`のSampleRobot1サンプル
+  - 参照元：同期対象として設定した上流実装なし
+  - 外部モデル：`simple_bipedal` ROS package（repository、branch、commitは未固定）
+- 上流を同期するときは、記録済みcommitから新しい参照先までの差分を確認する。
+- 各サンプルの上流差分を反映して検証した後、コード変更と同じcommitで
+  上記の同期状態を更新する。取り込まない上流差分がある場合は、その理由を明記する。
+- 外部モデルやデータを特定の版に固定した場合は、参照元、branchまたはtag、
+  commitを同じ一覧に記録する。
 - ロボット固有の観測、action、報酬、学習アルゴリズム、環境動作、クラス構成は、
   意図的な差分として明記する場合を除き、参照元の上流実装に合わせる。
 - 以下のようなリポジトリ全体に関係する統合機能は維持する。
