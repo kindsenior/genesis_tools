@@ -1,52 +1,50 @@
 # genesis_tools
 
-## Supported environment
+## 対応環境
 
 - Ubuntu 20.04
 - Python 3.10
 - Genesis 1.3.3
 - rsl-rl-lib 5.5.1
-- PyTorch 2.11.0 (CUDA 12.8 or CPU wheel)
+- PyTorch 2.11.0（CUDA 12.8またはCPU向けwheel）
 
-The examples use the rsl-rl 5.5.1 actor/critic configuration and TensorDict
-observation groups. Checkpoints written by rsl-rl 2.2.4 are intentionally
-rejected with an explicit compatibility error; retrain them with this stack or
-evaluate them in the old environment.
+- **学習データの互換性：** 現行版はrsl-rl 5.5.1のactor/critic設定とTensorDictの
+  観測グループを使用する．rsl-rl 2.2.4で作成したcheckpointは明示的に拒否するため，
+  この環境で再学習するか旧環境で評価する必要がある．
+- **PyTorchとの関係：** PyTorchのversionは，rsl-rlだけでなくホストのCUDAおよび
+  driver環境に合わせて選択する．GPU向け固定環境はPyTorch 2.11.0とCUDA 12.8の
+  組み合わせで検証している．CPUのみの環境ではCPU向けrequirementsを使用する．
+  PyTorch 2.8.0はrsl-rl 5.5.1の必須要件ではない．
 
-PyTorch is selected for the host's CUDA/driver environment, not by rsl-rl
-alone. The checked-in GPU lock is the stack validated here: PyTorch 2.11.0 with
-CUDA 12.8. Use the CPU lock on a CPU-only machine; PyTorch 2.8.0 is not a
-requirement of rsl-rl 5.5.1.
+## インストール
 
-## Installation
+インストール方法は2種類ある．
 
-There are two installation methods:
+- **Catkin：** ROS packageをbuildし，`rosrun`のentry pointを使用する．
+- **Pythonのみ：** catkin workspaceをbuildまたはsourceせず，`pip`でrepositoryを
+  installしてPython moduleのentry pointを使用する．
 
-- **Catkin:** builds the ROS package and provides the `rosrun` entry points.
-- **Python only:** installs the repository with `pip` and uses the Python
-  module entry points without building or sourcing a catkin workspace.
-
-Both methods use the dependency versions locked by `genesis_tools`.
+どちらの方法でも，`genesis_tools`で固定した依存関係のversionを使用する．
 
 ### Catkin
 
-1. Install Python 3.10.
+1. Python 3.10をinstallする．
 
    ```bash
    sudo apt install python3.10 python3.10-venv python3.10-dev -y
    ```
 
-2. Clone and build `genesis_tools` in a catkin workspace.
+2. catkin workspaceに`genesis_tools`をcloneしてbuildする．
 
    ```bash
    cd <catkin_workspace>/src
    git clone git@github.com:kindsenior/genesis_tools.git
    cd ..
-   deactivate  # Deactivate an active virtual environment before building.
+   deactivate  # build前に有効なvirtual environmentを無効化する．
    catkin build genesis_tools
    ```
 
-3. Create and activate a virtual environment.
+3. virtual environmentを作成して有効化する．
 
    ```bash
    mkdir -p ~/genesis_ws
@@ -54,29 +52,29 @@ Both methods use the dependency versions locked by `genesis_tools`.
    source ~/genesis_ws/venv_genesis/bin/activate
    ```
 
-4. Install the locked Genesis 1.3.3 stack.
+4. versionを固定したGenesis 1.3.3環境をinstallする．
 
    ```bash
    source <catkin_workspace>/devel/setup.bash
    roscd genesis_tools
    python -m pip install --upgrade pip
    python -m pip install -r requirements_Ubuntu20.04_gpu.txt
-   # Use requirements_Ubuntu20.04_cpu.txt instead on a CPU-only machine.
+   # CPUのみの環境では，代わりにrequirements_Ubuntu20.04_cpu.txtを使用する．
    ```
 
-5. Confirm the installed versions.
+5. installされたversionを確認する．
 
    ```bash
    python -c 'from importlib.metadata import version; print("genesis-world", version("genesis-world")); print("rsl-rl-lib", version("rsl-rl-lib")); print("torch", version("torch"))'
    ```
 
-   The expected versions are `genesis-world 1.3.3` and
-   `rsl-rl-lib 5.5.1`, and the PyTorch variant selected by the requirements
-   file (`2.11.0+cu128` or `2.11.0+cpu`).
+   想定するversionは`genesis-world 1.3.3`，`rsl-rl-lib 5.5.1`，および
+   requirementsファイルで選択したPyTorch（`2.11.0+cu128`または
+   `2.11.0+cpu`）である．
 
-### Python only
+### Pythonのみ
 
-1. Install Python 3.10 and create a virtual environment.
+1. Python 3.10をinstallし，virtual environmentを作成する．
 
    ```bash
    sudo apt install python3.10 python3.10-venv python3.10-dev -y
@@ -85,59 +83,59 @@ Both methods use the dependency versions locked by `genesis_tools`.
    source ~/genesis_ws/venv_genesis/bin/activate
    ```
 
-2. Clone the repository into any working directory.
+2. 任意の作業directoryにrepositoryをcloneする．
 
    ```bash
    cd <work_directory>
    git clone git@github.com:kindsenior/genesis_tools.git
    ```
 
-3. Install the locked dependencies and the Python package.
+3. versionを固定した依存関係とPython packageをinstallする．
 
    ```bash
    python -m pip install --upgrade pip
    python -m pip install -r genesis_tools/requirements_Ubuntu20.04_gpu.txt
-   # Use requirements_Ubuntu20.04_cpu.txt instead on a CPU-only machine.
+   # CPUのみの環境では，代わりにrequirements_Ubuntu20.04_cpu.txtを使用する．
    python -m pip install -e ./genesis_tools
    ```
 
-4. Confirm the installed versions.
+4. installされたversionを確認する．
 
    ```bash
    python -c 'from importlib.metadata import version; print("genesis-world", version("genesis-world")); print("rsl-rl-lib", version("rsl-rl-lib")); print("torch", version("torch"))'
    ```
 
-   The expected versions are `genesis-world 1.3.3` and
-   `rsl-rl-lib 5.5.1`, and the PyTorch variant selected by the requirements
-   file (`2.11.0+cu128` or `2.11.0+cpu`).
+   想定するversionは`genesis-world 1.3.3`，`rsl-rl-lib 5.5.1`，および
+   requirementsファイルで選択したPyTorch（`2.11.0+cu128`または
+   `2.11.0+cpu`）である．
 
-## Samples
+## サンプル
 
-Relative log paths are resolved from the current working directory. Use the
-same log directory for training, evaluation, and export.
+相対指定したlog pathは，現在の作業directoryを基準に解決される．学習，評価，
+exportでは同じlog directoryを指定すること．
 
 ### Go2
 
-#### Catkin entry points
+#### Catkinエントリポイント
 
 ```bash
 source <catkin_workspace>/devel/setup.bash
 source ~/genesis_ws/venv_genesis/bin/activate
 
-# Training: writes model_100.pt as the final checkpoint
+# 学習：最終checkpointとしてmodel_100.ptを作成する．
 rosrun genesis_tools go2_train.py \
   -l logs/go2_locomotion/test --max-iterations 100
 
-# Evaluation
+# 評価
 rosrun genesis_tools go2_eval.py \
   -l logs/go2_locomotion/test --ckpt 100
 
-# LibTorch export
+# LibTorch向けexport
 rosrun genesis_tools go2_export.py \
   -l logs/go2_locomotion/test --ckpt 100
 ```
 
-#### Python module entry points
+#### Pythonモジュールのエントリポイント
 
 ```bash
 python -m genesis_tools.examples.go2.train \
@@ -148,21 +146,22 @@ python -m genesis_tools.examples.go2.export \
   -l logs/go2_locomotion/test --ckpt 100
 ```
 
-Both export paths create `policy_traced.pt` for loading from LibTorch. Training,
-evaluation, and export use `cfgs.yaml` as the canonical configuration artifact.
-An existing training directory is rejected unless `--resume` or the explicit
-destructive option `--overwrite` is supplied.
-`--max-iterations N` runs iterations 0 through N for a fresh run, so the
-final checkpoint is `model_N.pt`. `--stop-iteration N` instead selects an
-absolute global iteration and is mutually exclusive with `--max-iterations`.
+どちらのexport方法でも，LibTorchから読み込むための`policy_traced.pt`を作成する．
+学習，評価，exportでは，標準の設定artifactとして`cfgs.yaml`を使用する．
+既存の学習directoryは，`--resume`または明示的な破壊的optionである`--overwrite`を
+指定しない限り拒否する．
+
+新規学習で`--max-iterations N`を指定すると，iteration 0からNまで実行するため，
+最終checkpointは`model_N.pt`になる．`--stop-iteration N`は代わりに絶対的な
+global iterationを指定する．`--max-iterations`との同時指定はできない．
 
 ### SBR1
 
-The packaged SBR1 example uses the same shared rsl-rl boundary as Go2 while
-keeping its robot-specific environment in `genesis_tools.examples.sbr1`.
+package化されたSBR1サンプルは，Go2と同じ共通rsl-rl境界を使用しながら，
+ロボット固有の環境を`genesis_tools.examples.sbr1`に保持する．
 
 ```bash
-# Catkin entry points
+# Catkinエントリポイント
 rosrun genesis_tools sbr1_train.py \
   -l logs/sbr1_locomotion/test --max-iterations 1000
 rosrun genesis_tools sbr1_eval.py \
@@ -170,7 +169,7 @@ rosrun genesis_tools sbr1_eval.py \
 rosrun genesis_tools sbr1_export.py \
   -l logs/sbr1_locomotion/test --ckpt 100
 
-# Python module entry points
+# Pythonモジュールのエントリポイント
 python -m genesis_tools.examples.sbr1.train \
   -l logs/sbr1_locomotion/test --max-iterations 1000
 python -m genesis_tools.examples.sbr1.eval \
@@ -179,50 +178,49 @@ python -m genesis_tools.examples.sbr1.export \
   -l logs/sbr1_locomotion/test --ckpt 100
 ```
 
-SBR1 also writes `cfgs.yaml`, rejects accidental replacement of an existing
-training directory, supports checkpoint resume, and exports
-`policy_traced.pt`.
+SBR1も`cfgs.yaml`を書き出し，既存の学習directoryの意図しない置換を拒否する．
+checkpointからのresumeに対応し，`policy_traced.pt`をexportする．
 
-### Model and source provenance
+### モデルとソースの来歴
 
-`genesis_tools.provenance` provides shared helpers for content-addressed robot
-model snapshots and training provenance. A model hash covers the URDF, every
-file resource referenced by the URDF, and the Genesis model-build options.
-Snapshots retain the original relative paths for archival and fallback use.
-`inspect_model_source()` and `verify_model_source()` let a caller load the
-original source model while checking that it still matches the archived hash.
+`genesis_tools.provenance`は，content-addressed形式のロボットモデルsnapshotと
+学習の来歴を記録するための共通helperを提供する．モデルhashは，URDF，URDFが
+参照するすべてのファイルresource，およびGenesisのモデルbuild optionを対象に
+計算する．snapshotでは，archiveおよびfallback利用のために元の相対pathを
+維持する．`inspect_model_source()`と`verify_model_source()`を使用すると，
+元のsource modelがarchive済みhashと一致することを確認しながら読み込める．
 
-Git provenance records the revision, remote, branch, status, all untracked file
-names, and an AI-readable patch for tracked and untracked text files. Package
-versions and the Python interpreter are written separately to
-`software_environment.yaml`. The JAXON3 example in `genesis_tutorials` uses
-these helpers with exact run paths and a shared content-addressed robot-model
-store.
+Gitの来歴には，revision，remote，branch，status，すべての未追跡ファイル名，
+および追跡・未追跡のtext fileに対するAIが読めるpatchを記録する．packageの
+versionとPython interpreterは，別途`software_environment.yaml`へ書き出す．
+`genesis_tutorials`のJAXON3サンプルは，正確なrun pathと共有のcontent-addressed
+ロボットモデルstoreとともに，これらのhelperを使用する．
 
-### Motion recording
+### モーション記録
 
-`genesis_tools.motion_recording.MotionRecorder` is the robot-independent
-writer for structural-analysis motion bundles. It accepts numeric/string
-samples from a robot-specific sampler, separates sequences at explicit reset
-boundaries, derives joint acceleration within each continuous sequence, and
-writes compressed NPZ files that can be opened with `allow_pickle=False`.
-Bundle schema 1 requires a hashed `effective_dynamics.yaml` and uses sequence
-schema 1 for each time-series NPZ. Keeping the two version fields distinct lets
-the motion-array format evolve independently while recording the built
-simulator's link inertias, joint frames/axes, and runtime DOF parameters needed
-for model reconstruction.
-Robot-specific Genesis state and contact extraction, policy loading, and link
-selection remain in `genesis_tutorials`; JAXON3 is the first adapter.
+`genesis_tools.motion_recording.MotionRecorder`は，構造解析用motion bundleを
+書き出すロボット非依存のwriterである．ロボット固有のsamplerから数値または文字列の
+sampleを受け取り，明示的なreset境界でsequenceを分割し，連続する各sequence内で
+関節加速度を導出する．出力する圧縮NPZファイルは，`allow_pickle=False`で
+読み込める．
 
-### Legacy pickle conversion
+bundle schema 1ではhash付きの`effective_dynamics.yaml`が必須で，各時系列NPZには
+sequence schema 1を使用する．2つのversion fieldを分けることで，モデル再構築に
+必要なsimulator構築後のlink inertia，joint frame/axis，実行時DOF parameterを
+記録しながら，motion array形式だけを独立して更新できる．
 
-`export_cfgs_to_yaml.py` is only for trusted legacy or upstream logs containing
-`cfgs.pkl`. Pickle loading can execute code, so do not use it with untrusted
-files.
+ロボット固有のGenesis state/contact抽出，policy読み込み，link選択は
+`genesis_tutorials`に残す．最初のadapterはJAXON3である．
+
+### 旧形式pickleの変換
+
+`export_cfgs_to_yaml.py`は，`cfgs.pkl`を含む信頼できる旧形式または上流由来のlogに
+だけ使用すること．pickleの読み込みではcodeが実行される可能性があるため，
+信頼できないファイルには使用しないこと．
 
 ```bash
 rosrun genesis_tools export_cfgs_to_yaml.py --log_dir <legacy-log-directory>
-# Or, without catkin:
+# Catkinを使用しない場合：
 python -m genesis_tools.legacy.pickle_to_yaml \
   --log_dir <legacy-log-directory>
 ```
